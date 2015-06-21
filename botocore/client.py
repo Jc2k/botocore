@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class ClientCreator(object):
+
     """Creates client objects for a service."""
     def __init__(self, loader, endpoint_resolver, user_agent, event_emitter,
                  retry_handler_factory, retry_config_translator,
@@ -60,11 +61,14 @@ class ClientCreator(object):
         service_model = self._load_service_model(service_name, api_version)
         return self._create_client_class(service_name, service_model)
 
+    def _get_client_class(self):
+        return BaseClient
+
     def _create_client_class(self, service_name, service_model):
         class_attributes = self._create_methods(service_model)
         py_name_to_operation_name = self._create_name_mapping(service_model)
         class_attributes['_PY_TO_OP_NAME'] = py_name_to_operation_name
-        bases = [BaseClient]
+        bases = [self._get_base_client_class()]
         self._event_emitter.emit('creating-client-class.%s' % service_name,
                                  class_attributes=class_attributes,
                                  base_classes=bases)
@@ -170,6 +174,9 @@ class ClientCreator(object):
 
         return region_name
 
+    def _get_endpoint_creator_class(self):
+        return EndpointCreator
+
     def _get_client_args(self, service_model, region_name, is_secure,
                          endpoint_url, verify, credentials,
                          scoped_config, client_config):
@@ -180,8 +187,8 @@ class ClientCreator(object):
 
         event_emitter = copy.copy(self._event_emitter)
 
-        endpoint_creator = EndpointCreator(self._endpoint_resolver,
-                                           region_name, event_emitter)
+        endpoint_creator = self._get_endpoint_creator_class()(
+            self._endpoint_resolver, region_name, event_emitter)
         endpoint = endpoint_creator.create_endpoint(
             service_model, region_name, is_secure=is_secure,
             endpoint_url=endpoint_url, verify=verify,

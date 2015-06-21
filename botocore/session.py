@@ -153,6 +153,7 @@ class Session(object):
         self._register_endpoint_resolver()
         self._register_event_emitter()
         self._register_response_parser_factory()
+        self._register_client_creator()
 
     def _register_event_emitter(self):
         self._components.register_component('event_emitter', self._events)
@@ -175,6 +176,9 @@ class Session(object):
     def _register_response_parser_factory(self):
         self._components.register_component('response_parser_factory',
                                             ResponseParserFactory())
+
+    def _register_client_creator(self):
+        self._components.register_component('client_creator_class', botocore.client.ClientCreator)
 
     def _register_builtin_handlers(self, events):
         for spec in handlers.BUILTIN_HANDLERS:
@@ -751,7 +755,8 @@ class Session(object):
         else:
             credentials = self.get_credentials()
         endpoint_resolver = self.get_component('endpoint_resolver')
-        client_creator = botocore.client.ClientCreator(
+        client_creator_class = self.get_component('client_creator_class')
+        client_creator = client_creator_class(
             loader, endpoint_resolver, self.user_agent(), event_emitter,
             retryhandler, translate, response_parser_factory)
         client = client_creator.create_client(

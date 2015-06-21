@@ -276,13 +276,16 @@ class EndpointCreator(object):
         # True if the env var does not exist.
         return os.environ.get('REQUESTS_CA_BUNDLE', True)
 
+    def _get_endpoint_class(self):
+        return Endpoint
+
     def _get_endpoint_complex(self, endpoint_prefix,
                               endpoint_url, verify,
                               event_emitter,
                               response_parser_factory=None):
         proxies = self._get_proxies(endpoint_url)
         verify = self._get_verify_value(verify)
-        return Endpoint(
+        return self._get_endpoint_class()(
             endpoint_url,
             endpoint_prefix=endpoint_prefix,
             event_emitter=event_emitter,
